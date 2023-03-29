@@ -1,0 +1,26 @@
+#!/bin/bash
+
+JBOSS_HOME="/opt/wildfly"
+JBOSS_USER=wildfly
+WILDFLY_HOME="/opt/wildfly"
+WILDFLY_USER="wildfly"
+STARTUP_WAIT=240
+SHUTDOWN_WAIT=30
+WILDFLY_CONFIG=standalone.xml
+WILDFLY_MODE=standalone
+WILDFLY_BIND=0.0.0.0
+LAUNCH_JBOSS_IN_BACKGROUND=1
+
+export JBOSS_HOME
+export JBOSS_USER
+export WILDFLY_HOME
+export WILDFLY_USER
+export STARTUP_WAIT
+export SHUTDOWN_WAIT
+export WILDFLY_CONFIG
+export WILDFLY_MODE
+export WILDFLY_BIND
+export LAUNCH_JBOSS_IN_BACKGROUND
+
+export APPSRV_HOME=/opt/wildfly
+export PATH=$PATH:$JBOSS_HOME/bin

@@ -1,0 +1,112 @@
+FROM almalinux:9.1
+
+RUN dnf --assumeyes install epel-release && dnf --assumeyes update && \
+    dnf --assumeyes upgrade
+RUN dnf --assumeyes install initscripts net-tools nano unzip wget iputils \
+    telnet openssl java-11-openjdk-devel.x86_64 java-17-openjdk-devel.x86_64 \
+    diffutils.x86_64 ncurses-devel nfs-utils maven ncurses
+RUN dnf clean all
+
+COPY java_envi_dir/set_java_envi.sh /etc/profile.d/java.sh
+
+RUN update-alternatives --set java \
+    /usr/lib/jvm/java-11-openjdk-11.0.18.0.10-2.el9_1.x86_64/bin/java && \
+    update-alternatives --set javac \
+    /usr/lib/jvm/java-11-openjdk-11.0.18.0.10-2.el9_1.x86_64/bin/javac
+
+## setting ant envi 
+
+RUN mkdir -p /usr/local/ant && cd /usr/local/ant && \
+    wget https://dlcdn.apache.org/ant/binaries/apache-ant-1.10.13-bin.zip && \
+    unzip apache-ant-1.10.13-bin.zip && rm apache-ant-1.10.13-bin.zip
+COPY ant_envi_dir/set_ant_envi.sh /etc/profile.d/ant.sh
+
+## setting wildfly install script and install wildfly
+## we setting ARG so that we can install it dinamicaly using `--build-arg` value
+## and then set the environment variable `WILDFLY_VERSION` used in installation script
+ARG WILDFLY_INSTALL_VERSION="26.1.2.Final"
+ENV WILDFLY_VERSION=$WILDFLY_INSTALL_VERSION
+ARG WILDFLY_REPOSITORY_URL=https://github.com/wildfly/wildfly/releases/download
+ENV WILDFLY_REPO_URL=$WILDFLY_REPOSITORY_URL
+
+## install wildlfy
+RUN mkdir -p /usr/local/wildfly/install_script
+COPY wildfly_install_script/wildfly-install.sh /usr/local/wildfly/install_script/wildfly_install.sh
+RUN chmod 755 /usr/local/wildfly/install_script/wildfly_install.sh && \
+    /usr/local/wildfly/install_script/wildfly_install.sh
+
+## setting wildfly envi and its run script
+COPY wildfly_envi_script/wildfly_setenv.sh /etc/profile.d/wildfly_setenv.sh
+COPY wildfly_run_script/run_wildfly.sh /run_wildfly.sh
+RUN chmod 755 /run_wildfly.sh
+
+## Copy wildfly config scripts 
+RUN mkdir -p /usr/local/wildfly/config_script
+COPY wildfly_config_script/*.sh /usr/local/wildfly/config_script
+
+## COPY wildfly glowroot install script
+ARG ENABLE_GLOWROOT=true
+ENV ENABLE_GROWROOT=$ENABLE_GLOWROOT
+COPY glowroot_install_script/*.sh /usr/local/wildfly/config_script
+
+### chmod config scripts
+RUN chmod 755 /usr/local/wildfly/config_script/*.sh
+
+### setting other default arg
+ARG DISABLE_MANAGEMENT_WEB_CONSOLE=false
+ENV DISABLE_MGMT_WEB_CONSOLE=$DISABLE_MANAGEMENT_WEB_CONSOLE
+ARG REMOVE_WILDFLY_WELCOME_CONTENT=false
+ENV REMOVE_WF_WELCOME_CONTENT=$REMOVE_WILDFLY_WELCOME_CONTENT
+ARG SIGNSERVER_VERSION=signserver-ce-5.11.1.Final
+ENV SIGNSERVER_VERSION=$SIGNSERVER_VERSION
+
+## Copy signserver set envi script, this is used for installation/deploy process also
+COPY signserver_envi_script/envi_signserver.sh /etc/profile.d/envi_signserver.sh
+## COPY and unzip signserver bin
+COPY installer_zip/signserver/$SIGNSERVER_VERSION-bin.zip \
+     /opt/$SIGNSERVER_VERSION-bin.zip 
+RUN unzip /opt/$SIGNSERVER_VERSION-bin.zip -d /opt && \
+    ln -s  /opt/$SIGNSERVER_VERSION/ /opt/signserver && \
+    rm /opt/$SIGNSERVER_VERSION-bin.zip
+### copy signserver custom conf folder
+COPY signserver-custom /opt/
+
+## COPY main run scipts
+ARG WAIT_FOR_WILDFLY=3
+ENV WAIT_FOR_WILDFLY_TO_RUN=$WAIT_FOR_WILDFLY
+COPY run_all.sh /run_all.sh
+RUN chmod 755 /run_all.sh
+
+
+## exposed ports
+### glowroot port
+EXPOSE 4000
+### signserver port
+##### unencrypted traffic
+EXPOSE 8080
+##### encrypted, only server authentication
+EXPOSE 8442
+#### encrypted, both server and client authentication
+EXPOSE 8443
+## wildfly web admin console port
+EXPOSE 9990
+
+
+## Copy clientToolBox
+COPY installer_zip/clientToolBox /opt/
+
+## Config HSM library
+RUN mkdir -p /opt/utimaco/
+COPY installer_zip/utimaco/*.zip /opt/utimaco/
+RUN unzip /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip -d \
+    /opt/utimaco && \
+    unzip /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip -d \
+    /opt/utimaco && \
+    rm /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip && \
+    rm /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip
+RUN mkdir /etc/utimaco
+COPY utimaco_conf_dir/*.cfg /etc/utimaco
+
+## entry point
+ENTRYPOINT ["/bin/bash", "-l", "-c" ]
+CMD ["/run_all.sh"]
