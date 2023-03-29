@@ -71,13 +71,6 @@ RUN unzip /opt/$SIGNSERVER_VERSION-bin.zip -d /opt && \
 ### copy signserver custom conf folder
 COPY signserver-custom /opt/
 
-## COPY main run scipts
-ARG WAIT_FOR_WILDFLY=3
-ENV WAIT_FOR_WILDFLY_TO_RUN=$WAIT_FOR_WILDFLY
-COPY run_all.sh /run_all.sh
-RUN chmod 755 /run_all.sh
-
-
 ## exposed ports
 ### glowroot port
 EXPOSE 4000
@@ -90,7 +83,6 @@ EXPOSE 8442
 EXPOSE 8443
 ## wildfly web admin console port
 EXPOSE 9990
-
 
 ## Copy clientToolBox
 COPY installer_zip/clientToolBox /opt/
@@ -106,6 +98,12 @@ RUN unzip /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip -d \
     rm /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip
 RUN mkdir /etc/utimaco
 COPY utimaco_conf_dir/*.cfg /etc/utimaco
+
+## COPY main run scipts
+ARG WAIT_FOR_WILDFLY=13
+ENV WAIT_FOR_WILDFLY_TO_RUN=$WAIT_FOR_WILDFLY
+COPY run_all.sh /run_all.sh
+RUN chmod 755 /run_all.sh
 
 ## entry point
 ENTRYPOINT ["/bin/bash", "-l", "-c" ]

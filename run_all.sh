@@ -1,6 +1,6 @@
 #/bin/bash
 
-/run_wildfly.sh
+/run_wildfly.sh &
 
 sleep $WAIT_FOR_WILDFLY_TO_RUN
 
