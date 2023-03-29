@@ -99,9 +99,9 @@ COPY installer_zip/clientToolBox /opt/
 RUN mkdir -p /opt/utimaco/
 COPY installer_zip/utimaco/*.zip /opt/utimaco/
 RUN unzip /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip -d \
-    /opt/utimaco && \
+    /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1 && \
     unzip /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip -d \
-    /opt/utimaco && \
+    /opt/utimaco/SecurityServerEvaluation-V4.51.0.1 && \
     rm /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip && \
     rm /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip
 RUN mkdir /etc/utimaco
