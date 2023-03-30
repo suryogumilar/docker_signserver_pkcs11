@@ -54,6 +54,8 @@ docker run -it --name lss_2612 \
  -e WAIT_FOR_WILDFLY_TO_RUN=10 \
  -e RUN_WILDFLY_CONFIG=false \
  -e ENABLE_GLOWROOT=false \
+ -e CRYPTO_SERVER_IP=172.22.0.4 \
+ -e CS_PKCS11_R2_CFG=/etc/utimaco/cs_pkcs11_R2.cfg \
  -p 8888:8080 -p 8443:8443 -p 8442:8442 -p 9990:9990 \
  -p 4000:4000 \
  -v ./certificates_dir/certa_wildfly/wildfly_keystore.p12:/opt/wildfly/standalone/configuration/keystore/wildfly_keystore.p12:ro \
@@ -61,4 +63,14 @@ docker run -it --name lss_2612 \
  -v ./transit_folder:/mnt/transit_folder \
  --network=wfNetwork \
  local_signserver:5.11.1-Final
+```
+
+### to check connectivity to HSM after container is running
+
+Make sure the HSM and container are in the same network.
+Then enter into the container then run:
+
+```sh
+cd /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/Software/Linux/x86-64/Administration/
+./csadm Dev=3001@hsm_simulator GetState
 ```
