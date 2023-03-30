@@ -2,20 +2,26 @@
 
 /run_wildfly.sh &
 
-sleep $WAIT_FOR_WILDFLY_TO_RUN
+if [ "$RUN_WILDFLY_CONFIG" = true ]; then
+  sleep $WAIT_FOR_WILDFLY_TO_RUN
+  ## run config scripts
+  echo "config wildfly remoting"
+  bash /usr/local/wildfly/config_script/config_wildfly_remoting.sh
+  echo "config wildfly logging (for signserver)"
+  bash /usr/local/wildfly/config_script/config_wildfly_signserver_logging.sh
+  echo "config wsdl location rewrite"
+  bash /usr/local/wildfly/config_script/config_wildfly_wsdl_location_rewrite.sh
+  echo "config https 3port separation"
+  bash /usr/local/wildfly/config_script/config_https_3port_separation.sh
+  echo "remove exampe DS"
+  bash /usr/local/wildfly/config_script/config_widlfy_remove_exampleDS.sh
+  echo "config datasource mariadb"
+  bash /usr/local/wildfly/config_script/config_wildfly_datasource_mariadb_4signserver.sh
+fi
 
-## run config scripts
-
-bash /usr/local/wildfly/config_script/config_wildfly_remoting.sh
-bash /usr/local/wildfly/config_script/config_wildfly_signserver_logging.sh
-bash /usr/local/wildfly/config_script/config_wildfly_wsdl_location_rewrite.sh
-bash /usr/local/wildfly/config_script/config_https_3port_separation.sh
-bash /usr/local/wildfly/config_script/config_widlfy_remove_exampleDS.sh
-bash /usr/local/widlfly/config_script/config_wildfly_datasource_mariadb_4signserver.sh
-
-if [ "$ENABLE_GROWROOT" = true ]; then
+if [ "$ENABLE_GLOWROOT" = true ]; then
   bash /usr/local/wildfly/config_script/install_glowroot.sh
-  echo "glowroot enabled!"
+  echo "glowroot installed!"
 fi
 
 if [ "$DISABLE_MGMT_WEB_CONSOLE" = true ]; then
@@ -36,4 +42,4 @@ source /etc/profile.d/envi_signserver.sh
 cd /opt/$SIGNSERVER_VERSION
 ant deploy
 
-
+sleep infinity

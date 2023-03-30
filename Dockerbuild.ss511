@@ -24,16 +24,41 @@ COPY ant_envi_dir/set_ant_envi.sh /etc/profile.d/ant.sh
 ## setting wildfly install script and install wildfly
 ## we setting ARG so that we can install it dinamicaly using `--build-arg` value
 ## and then set the environment variable `WILDFLY_VERSION` used in installation script
-ARG WILDFLY_INSTALL_VERSION="26.1.2.Final"
+ARG WILDFLY_INSTALL_VERSION="26.1.3.Final"
 ENV WILDFLY_VERSION=$WILDFLY_INSTALL_VERSION
 ARG WILDFLY_REPOSITORY_URL=https://github.com/wildfly/wildfly/releases/download
 ENV WILDFLY_REPO_URL=$WILDFLY_REPOSITORY_URL
 
 ## install wildlfy
 RUN mkdir -p /usr/local/wildfly/install_script
-COPY wildfly_install_script/wildfly-install.sh /usr/local/wildfly/install_script/wildfly_install.sh
+COPY wildfly_install_script/wildfly-install.sh \
+     /usr/local/wildfly/install_script/wildfly_install.sh
 RUN chmod 755 /usr/local/wildfly/install_script/wildfly_install.sh && \
-    /usr/local/wildfly/install_script/wildfly_install.sh
+    /usr/local/wildfly/install_script/wildfly_install.sh && \
+    rm /wildfly-${WILDFLY_INSTALL_VERSION}.tar.gz
+
+## Copy clientToolBox
+RUN mkdir -p /opt/clientToolBox
+COPY installer_zip/clientToolBox /opt/clientToolBox
+
+## Config HSM library
+RUN mkdir -p /opt/utimaco/
+COPY installer_zip/utimaco/*.zip /opt/utimaco/
+RUN unzip /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip -d \
+    /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1 && \
+    unzip /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip -d \
+    /opt/utimaco/SecurityServerEvaluation-V4.51.0.1 && \
+    rm /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip && \
+    rm /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip
+RUN chmod 755 /opt/utimaco/SecurityServerEvaluation-V4.51.0.1/\
+Software/Linux/x86-64/Administration/csadm
+RUN chmod 755  /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/\
+Software/Linux/x86-64/Administration/csadm
+RUN ln -s /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/\
+Software/Linux/x86-64/Crypto_APIs/PKCS11_R2/lib/libcs_pkcs11_R2.so \
+    /opt/hsm_pkcs11.so
+RUN mkdir /etc/utimaco
+COPY utimaco_conf_dir/*.cfg /etc/utimaco
 
 ## setting wildfly envi and its run script
 COPY wildfly_envi_script/wildfly_setenv.sh /etc/profile.d/wildfly_setenv.sh
@@ -52,6 +77,10 @@ COPY glowroot_install_script/*.sh /usr/local/wildfly/config_script
 ### chmod config scripts
 RUN chmod 755 /usr/local/wildfly/config_script/*.sh
 
+### setting wildfly config script run
+ARG RUN_WILDFLY_CONFIG=true
+ENV RUN_WILDFLY_CONFIG=$RUN_WILDFLY_CONFIG
+
 ### setting other default arg
 ARG DISABLE_MANAGEMENT_WEB_CONSOLE=false
 ENV DISABLE_MGMT_WEB_CONSOLE=$DISABLE_MANAGEMENT_WEB_CONSOLE
@@ -60,8 +89,10 @@ ENV REMOVE_WF_WELCOME_CONTENT=$REMOVE_WILDFLY_WELCOME_CONTENT
 ARG SIGNSERVER_VERSION=signserver-ce-5.11.1.Final
 ENV SIGNSERVER_VERSION=$SIGNSERVER_VERSION
 
-## Copy signserver set envi script, this is used for installation/deploy process also
-COPY signserver_envi_script/envi_signserver.sh /etc/profile.d/envi_signserver.sh
+## Copy signserver set envi script, this is used for installation/deploy 
+## process also
+COPY signserver_envi_script/envi_signserver.sh \
+     /etc/profile.d/envi_signserver.sh
 ## COPY and unzip signserver bin
 COPY installer_zip/signserver/$SIGNSERVER_VERSION-bin.zip \
      /opt/$SIGNSERVER_VERSION-bin.zip 
@@ -69,7 +100,8 @@ RUN unzip /opt/$SIGNSERVER_VERSION-bin.zip -d /opt && \
     ln -s  /opt/$SIGNSERVER_VERSION/ /opt/signserver && \
     rm /opt/$SIGNSERVER_VERSION-bin.zip
 ### copy signserver custom conf folder
-COPY signserver-custom /opt/
+RUN mkdir /opt/signserver-custom
+COPY signserver-custom /opt/signserver-custom
 
 ## exposed ports
 ### glowroot port
@@ -83,21 +115,6 @@ EXPOSE 8442
 EXPOSE 8443
 ## wildfly web admin console port
 EXPOSE 9990
-
-## Copy clientToolBox
-COPY installer_zip/clientToolBox /opt/
-
-## Config HSM library
-RUN mkdir -p /opt/utimaco/
-COPY installer_zip/utimaco/*.zip /opt/utimaco/
-RUN unzip /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip -d \
-    /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1 && \
-    unzip /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip -d \
-    /opt/utimaco/SecurityServerEvaluation-V4.51.0.1 && \
-    rm /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip && \
-    rm /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip
-RUN mkdir /etc/utimaco
-COPY utimaco_conf_dir/*.cfg /etc/utimaco
 
 ## COPY main run scipts
 ARG WAIT_FOR_WILDFLY=13
