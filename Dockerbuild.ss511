@@ -24,10 +24,10 @@ COPY ant_envi_dir/set_ant_envi.sh /etc/profile.d/ant.sh
 ## setting wildfly install script and install wildfly
 ## we setting ARG so that we can install it dinamicaly using `--build-arg` value
 ## and then set the environment variable `WILDFLY_VERSION` used in installation script
-ARG WILDFLY_INSTALL_VERSION="26.1.3.Final"
-ENV WILDFLY_VERSION=$WILDFLY_INSTALL_VERSION
-ARG WILDFLY_REPOSITORY_URL=https://github.com/wildfly/wildfly/releases/download
-ENV WILDFLY_REPO_URL=$WILDFLY_REPOSITORY_URL
+ARG WILDFLY_VERSION="26.1.3.Final"
+ENV WILDFLY_VERSION=$WILDFLY_VERSION
+ARG WILDFLY_REPO_URL=https://github.com/wildfly/wildfly/releases/download
+ENV WILDFLY_REPO_URL=$WILDFLY_REPO_URL
 
 ## install wildlfy
 RUN mkdir -p /usr/local/wildfly/install_script
@@ -35,7 +35,17 @@ COPY wildfly_install_script/wildfly-install.sh \
      /usr/local/wildfly/install_script/wildfly_install.sh
 RUN chmod 755 /usr/local/wildfly/install_script/wildfly_install.sh && \
     /usr/local/wildfly/install_script/wildfly_install.sh && \
-    rm /wildfly-${WILDFLY_INSTALL_VERSION}.tar.gz
+    rm /wildfly-${WILDFLY_VERSION}.tar.gz
+
+## create backup xml config
+RUN cp /opt/wildfly/standalone/configuration/standalone.xml \
+    /opt/wildfly/standalone/configuration/standalone_init0.xml
+
+## Copy configuration standalone.xml for wildfly
+COPY wildfly_conf_dir/standalone_template_signserver.xml \
+     /opt/wildfly-$WILDFLY_VERSION/standalone/\
+configuration/standalone.xml
+
 
 ## Copy clientToolBox
 RUN mkdir -p /opt/clientToolBox
@@ -70,24 +80,34 @@ RUN mkdir -p /usr/local/wildfly/config_script
 COPY wildfly_config_script/*.sh /usr/local/wildfly/config_script
 
 ## COPY wildfly glowroot install script
-ARG ENABLE_GLOWROOT=true
-ENV ENABLE_GROWROOT=$ENABLE_GLOWROOT
+ARG ENABLE_GLOWROOT=false
+ENV ENABLE_GLOWROOT=$ENABLE_GLOWROOT
 COPY glowroot_install_script/*.sh /usr/local/wildfly/config_script
 
 ### chmod config scripts
 RUN chmod 755 /usr/local/wildfly/config_script/*.sh
 
 ### setting wildfly config script run
-ARG RUN_WILDFLY_CONFIG=true
+ARG RUN_WILDFLY_CONFIG=false
 ENV RUN_WILDFLY_CONFIG=$RUN_WILDFLY_CONFIG
 
 ### setting other default arg
 ARG DISABLE_MANAGEMENT_WEB_CONSOLE=false
-ENV DISABLE_MGMT_WEB_CONSOLE=$DISABLE_MANAGEMENT_WEB_CONSOLE
+ENV DISABLE_MANAGEMENT_WEB_CONSOLE=$DISABLE_MANAGEMENT_WEB_CONSOLE
 ARG REMOVE_WILDFLY_WELCOME_CONTENT=false
-ENV REMOVE_WF_WELCOME_CONTENT=$REMOVE_WILDFLY_WELCOME_CONTENT
+ENV REMOVE_WILDFLY_WELCOME_CONTENT=$REMOVE_WILDFLY_WELCOME_CONTENT
 ARG SIGNSERVER_VERSION=signserver-ce-5.11.1.Final
 ENV SIGNSERVER_VERSION=$SIGNSERVER_VERSION
+
+### setting keystore and trustore password
+ARG KEYSTORE_PASSWORD=foo123
+ENV KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+ARG TRUSTSTORE_PASSWORD=foobar
+ENV TRUSTSTORE_PASSWORD=$TRUSTSTORE_PASSWORD
+
+### setting db password
+ARG DB_PASSWORD=passw0rd
+ENV DB_PASSWORD=$DB_PASSWORD
 
 ## Copy signserver set envi script, this is used for installation/deploy 
 ## process also
@@ -118,7 +138,7 @@ EXPOSE 9990
 
 ## COPY main run scipts
 ARG WAIT_FOR_WILDFLY=13
-ENV WAIT_FOR_WILDFLY_TO_RUN=$WAIT_FOR_WILDFLY
+ENV WAIT_FOR_WILDFLY=$WAIT_FOR_WILDFLY
 COPY run_all.sh /run_all.sh
 RUN chmod 755 /run_all.sh
 
