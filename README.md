@@ -41,6 +41,8 @@ build argument and also envi variables for running a container
  - TRUSTSTORE_PASSWORD=foobar
  - DB_PASSWORD=passw0rd
  - WAIT_FOR_WILDFLY=13
+ - CS_PKCS11_R2_CFG (file configuration for hsm lib)
+ - CRYPTO_SERVER_IP (IP of the HSM)
 
 ##### Problem on using `RUN_WILDFLY_CONFIG=true`
 
@@ -74,3 +76,25 @@ Then enter into the container then run:
 cd /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/Software/Linux/x86-64/Administration/
 ./csadm Dev=3001@hsm_simulator GetState
 ```
+
+### editing HSM IP address 
+
+you may want to edit the HSM IP Address. Do this:
+
+Edit the hsm config file (assuming we use `/etc/utimaco/cs_pkcs11_R2.cfg`
+ that is value in variable `CS_PKCS11_R2_CFG`)
+
+`nano /etc/utimaco/cs_pkcs11_R2.cfg`
+
+```
+...
+[CryptoServer]
+# Device specifier (here: CryptoServer is CSLAN with IP address 192.168.0.1)
+Device = 172.22.0.4
+#Device = 10.3.75.25
+...
+```
+
+Then reload wildfly
+
+`/opt/wildfly/bin/jboss-cli.sh --connect ':reload'`
