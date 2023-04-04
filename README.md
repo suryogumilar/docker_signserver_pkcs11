@@ -98,3 +98,50 @@ Device = 172.22.0.4
 Then reload wildfly
 
 `/opt/wildfly/bin/jboss-cli.sh --connect ':reload'`
+
+
+## Signserver CLI command
+
+some of CLI command that useful during working with signserver worker if the 
+WEB GUI is not available
+
+setup a PDF signer:
+
+`bin/signserver setproperties $SIGNSERVER_HOME/doc/sample-configs/pdfsigner.properties`
+
+Notice the created workerId and use it when applying the configuration 
+using the reload command:
+
+`bin/signserver reload WORKER-ID`
+
+
+we can get status of all workers
+
+`bin/signserver getstatus brief all`
+
+
+remove a worker (for example worer with id 4)
+
+```
+bin/signserver removeworker 4
+
+## after this, the worker will not be visible in the Admin Gui's workers list
+## then activate the removal with the reload command
+bin/signserver reload all
+```
+
+
+
+
+As a note, you can disable admin GUI when deploying signserver. 
+edit file: `conf/signserver_deploy.properties`
+
+find this line:
+
+```
+# Set to enable build of the AdminGUI
+# Default: true
+## set to false to disable AdminGUI
+admingui.enabled=true
+
+``` 
