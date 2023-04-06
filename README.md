@@ -76,6 +76,7 @@ Then enter into the container then run:
 cd /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/Software/Linux/x86-64/Administration/
 ./csadm Dev=3001@hsm_simulator GetState
 ```
+you might wanna try other ports like 288, 3000 or 3002. Check with HSM admin
 
 ### editing HSM IP address 
 
