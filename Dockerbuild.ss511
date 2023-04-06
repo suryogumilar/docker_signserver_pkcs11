@@ -64,11 +64,22 @@ RUN chmod 755 /opt/utimaco/SecurityServerEvaluation-V4.51.0.1/\
 Software/Linux/x86-64/Administration/csadm
 RUN chmod 755  /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/\
 Software/Linux/x86-64/Administration/csadm
+
+## symlink for R2 library
 RUN ln -s /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/\
 Software/Linux/x86-64/Crypto_APIs/PKCS11_R2/lib/libcs_pkcs11_R2.so \
     /opt/hsm_pkcs11.so
+
+## symlink for R3 library
+RUN ln -s /opt/utimaco/SecurityServerEvaluation-V4.51.0.1/\
+Software/Linux/x86-64/Crypto_APIs/PKCS11_R3/lib/libcs_pkcs11_R3.so \
+    /opt/hsm_r3_pkcs11.so
+
 RUN mkdir /etc/utimaco
 COPY utimaco_conf_dir/*.cfg /etc/utimaco
+
+## Utimaco envi for .so library
+COPY utimaco_envi_script/utimaco_env.sh /etc/profile.d/utimaco_env.sh
 
 ## setting wildfly envi and its run script
 COPY wildfly_envi_script/wildfly_setenv.sh /etc/profile.d/wildfly_setenv.sh
