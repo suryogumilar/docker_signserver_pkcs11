@@ -42,6 +42,7 @@ build argument and also envi variables for running a container
  - DB_PASSWORD=passw0rd
  - WAIT_FOR_WILDFLY=13
  - CS_PKCS11_R2_CFG (file configuration for hsm lib)
+ - CS_PKCS11_R3_CFG (also file configuration for hsm lib but R3)
  - CRYPTO_SERVER_IP (IP of the HSM)
 
 ##### Problem on using `RUN_WILDFLY_CONFIG=true`
