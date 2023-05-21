@@ -101,6 +101,26 @@ Then reload wildfly
 
 `/opt/wildfly/bin/jboss-cli.sh --connect ':reload'`
 
+### Add HSM Cryptoworker P11 
+
+create cryptoworker using admin gui and look for `WORKERGENID1.SHAREDLIBRARYNAME` 
+specificati0on in conf/signserver_deploy.properties . Usualy resides in 
+`/opt/signserver-custom` as per deployement
+
+`less /opt/signserver-custom/conf/signserver_deploy.properties`
+
+look for these kind of lines:
+
+```sh
+
+cryptotoken.p11.lib.254.name=Utimaco
+cryptotoken.p11.lib.254.file=/opt/hsm_pkcs11.so
+
+cryptotoken.p11.lib.255.name=UtimacoR3
+cryptotoken.p11.lib.255.file=/opt/hsm_r3_pkcs11.so
+
+```
+
 
 ## Signserver CLI command
 
@@ -147,3 +167,18 @@ find this line:
 admingui.enabled=true
 
 ``` 
+
+## Troubleshoot
+
+### Host '<ip-host>' is not allowed to connect to this MariaDB
+
+connect to mysql
+
+```sql
+GRANT ALL ON *.* TO 'signserver'@'%';
+FLUSH PRIVILEGES;
+```
+
+### org.signserver.admin.common.auth.AdminNotAuthorizedException: Administrator not authorized to resource
+
+`/opt/signserver/bin/signserver wsadmins -allowany`
