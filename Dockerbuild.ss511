@@ -9,10 +9,9 @@ RUN dnf clean all
 
 COPY java_envi_dir/set_java_envi.sh /etc/profile.d/java.sh
 
-RUN update-alternatives --set java \
-    /usr/lib/jvm/java-11-openjdk-11.0.18.0.10-2.el9_1.x86_64/bin/java && \
-    update-alternatives --set javac \
-    /usr/lib/jvm/java-11-openjdk-11.0.18.0.10-2.el9_1.x86_64/bin/javac
+RUN JAVA_11_PATH=/usr/lib/jvm/`ls /usr/lib/jvm/ | grep java-11-openjdk | grep x86_64` && \
+    update-alternatives --set java  $JAVA_11_PATH/bin/java && \
+    update-alternatives --set javac $JAVA_11_PATH/bin/javac
 
 ## setting ant envi 
 
