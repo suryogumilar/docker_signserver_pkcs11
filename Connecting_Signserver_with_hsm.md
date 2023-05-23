@@ -103,3 +103,61 @@ enter the signserver directory then:
 
 `ant deploy`
 
+## Example for PKCS11 Crypto worker
+
+```sh
+
+WORKERGENID1.TYPE=CRYPTO_WORKER
+WORKERGENID1.IMPLEMENTATION_CLASS=org.signserver.server.signers.CryptoWorker
+
+WORKERGENID1.CRYPTOTOKEN_IMPLEMENTATION_CLASS=org.signserver.server.cryptotokens.PKCS11CryptoToken
+
+WORKERGENID1.NAME=CryptoTokenP11
+
+
+WORKERGENID1.SHAREDLIBRARYNAME=UtimacoR3
+
+# Method for pointing out which slot to use:
+#WORKERGENID1.SLOTLABELTYPE=SLOT_NUMBER
+WORKERGENID1.SLOTLABELTYPE=SLOT_INDEX
+#WORKERGENID1.SLOTLABELTYPE=SLOT_LABEL
+
+# Which slot to use:
+WORKERGENID1.SLOTLABELVALUE=0
+
+# Optional password of the slot. If specified the token is "auto-activated".
+WORKERGENID1.PIN=12345678
+
+# Optional PKCS#11 attributes file or attributes
+#WORKERGENID1.ATTRIBUTESFILE=/opt/signserver/doc/sample-config/p11attributes.cfg
+WORKERGENID1.ATTRIBUTES=\
+    attributes(generate,CKO_PUBLIC_KEY,*) \= {\n   \
+       CKA_TOKEN \= false\n   \
+       CKA_ENCRYPT \= false\n   \
+       CKA_VERIFY \= true\n   \
+       CKA_WRAP \= false\n\
+    }\n\
+    attributes(generate, CKO_PRIVATE_KEY,*) \= {\n   \
+       CKA_TOKEN \= true\n   \
+       CKA_PRIVATE \= true\n   \
+       CKA_SENSITIVE \= true\n   \
+       CKA_EXTRACTABLE \= false\n   \
+       CKA_DECRYPT \= false\n   \
+       CKA_SIGN \= true\n   \
+       CKA_UNWRAP \= false\n\
+    }
+
+# Optional PKCS#11 attributes to override those specified statically in the ATTRIBUTES
+# property or file
+#WORKERGENID1.ATTRIBUTE.PRIVATE.RSA.CKA_ALLOWED_MECHANISMS=CKM_RSA_PKCS, CKM_SHA256_RSA_PKCS, CKM_SHA384_RSA_PKCS, CKM_SHA512_RSA_PKCS, CKM_RSA_PKCS_PSS, CKM_SHA256_RSA_PKCS_PSS, CKM_SHA384_RSA_PKCS_PSS, CKM_SHA512_RSA_PKCS_PSS
+#WORKERGENID1.ATTRIBUTE.PRIVATE.RSA.CKA_ALLOWED_MECHANISMS=CKM_RSA_PKCS_PSS, CKM_SHA256_RSA_PKCS_PSS, CKM_SHA384_RSA_PKCS_PSS, CKM_SHA512_RSA_PKCS_PSS
+#WORKERGENID1.ATTRIBUTE.PRIVATE.ECDSA.CKA_ALLOWED_MECHANISMS=CKM_ECDSA
+
+# One key to test activation with is required. If this key does not already
+# exist generate it after the worker has been created.
+#WORKERGENID1.DEFAULTKEY=RSA Private Key
+
+```
+
+After creating the pkcs11 worker proceed on creating key procedure as usual
+and set the `DEFAULTKEY` configuration value to the created key
