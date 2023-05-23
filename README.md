@@ -167,6 +167,29 @@ find this line:
 admingui.enabled=true
 
 ``` 
+## Start, stop and restart wildfly
+
+for starting wildfy inside container you can use:
+
+`/run_wildfly.sh`
+
+### stoping widlfly
+
+`/opt/wildfly/bin/jboss-cli.sh --connect shutdown`
+
+and then for starting it again after complete shutdown, use:
+
+`/run_wildfly.sh`
+
+### restarting wildfly
+
+restarting wildfly:
+
+`/opt/wildfly/bin/jboss-cli.sh --connect 'shutdown --restart=true'`
+
+restarting with specify in a timeout for the shutdown
+
+`/opt/wildfly/bin/jboss-cli.sh --connect 'shutdown --restart=true --timeout=10'`
 
 ## Troubleshoot
 
