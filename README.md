@@ -205,3 +205,18 @@ FLUSH PRIVILEGES;
 ### org.signserver.admin.common.auth.AdminNotAuthorizedException: Administrator not authorized to resource
 
 `/opt/signserver/bin/signserver wsadmins -allowany`
+
+### Timeout when loading container or `.ear`
+
+Signserver will reload all workers listed in its database. 
+When the number of worker become too large, wildfly loading the signserver 
+will likely to encounter timeout since the container stability will not be reached
+and this error showned in log:
+
+`WFLYCTL0348: Timeout after [300] seconds waiting for service container stability`
+
+We can solve it by increasing the blocking timeout:
+
+`/opt/wildfly/bin/jboss-cli.sh --connect  '/system-property=jboss.as.management.blocking.timeout:add(value=600000)'`
+
+
