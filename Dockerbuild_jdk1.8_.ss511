@@ -1,0 +1,159 @@
+FROM almalinux:9.1
+
+RUN dnf --assumeyes install epel-release && dnf --assumeyes update && \
+    dnf --assumeyes upgrade
+RUN dnf --assumeyes install initscripts net-tools nano unzip wget iputils \
+    telnet openssl java-1.8.0-openjdk-devel.x86_64 \
+    diffutils.x86_64 ncurses-devel nfs-utils maven ncurses
+RUN dnf clean all
+
+COPY java_envi_dir/set_java_envi.sh /etc/profile.d/java.sh
+
+
+# due to issue of java plugin we do not run this if jdk used is jdk1.8
+#RUN JAVA_8_PATH=/usr/lib/jvm/`ls /usr/lib/jvm/ | grep java-1.8 | grep openjdk | grep x86_64` && \
+#    update-alternatives --set java  $JAVA_8_PATH/bin/java && \
+#    update-alternatives --set javac $JAVA_8_PATH/bin/javac
+
+## setting ant envi 
+
+RUN mkdir -p /usr/local/ant && cd /usr/local/ant && \
+    wget https://dlcdn.apache.org/ant/binaries/apache-ant-1.10.13-bin.zip && \
+    unzip apache-ant-1.10.13-bin.zip && rm apache-ant-1.10.13-bin.zip
+COPY ant_envi_dir/set_ant_envi.sh /etc/profile.d/ant.sh
+
+## setting wildfly install script and install wildfly
+## we setting ARG so that we can install it dinamicaly using `--build-arg` value
+## and then set the environment variable `WILDFLY_VERSION` used in installation script
+ARG WILDFLY_VERSION="26.1.3.Final"
+ENV WILDFLY_VERSION=$WILDFLY_VERSION
+ARG WILDFLY_REPO_URL=https://github.com/wildfly/wildfly/releases/download
+ENV WILDFLY_REPO_URL=$WILDFLY_REPO_URL
+
+## install wildlfy
+RUN mkdir -p /usr/local/wildfly/install_script
+COPY wildfly_install_script/wildfly-install.sh \
+     /usr/local/wildfly/install_script/wildfly_install.sh
+RUN chmod 755 /usr/local/wildfly/install_script/wildfly_install.sh && \
+    /usr/local/wildfly/install_script/wildfly_install.sh && \
+    rm /wildfly-${WILDFLY_VERSION}.tar.gz
+
+## create backup xml config
+RUN cp /opt/wildfly/standalone/configuration/standalone.xml \
+    /opt/wildfly/standalone/configuration/standalone_init0.xml
+
+## Copy configuration standalone.xml for wildfly
+COPY wildfly_conf_dir/standalone_template_signserver.xml \
+     /opt/wildfly-$WILDFLY_VERSION/standalone/\
+configuration/standalone.xml
+
+
+## Copy clientToolBox
+RUN mkdir -p /opt/clientToolBox
+COPY installer_zip/clientToolBox /opt/clientToolBox
+
+## Config HSM library
+RUN mkdir -p /opt/utimaco/
+COPY installer_zip/utimaco/*.zip /opt/utimaco/
+RUN unzip /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip -d \
+    /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1 && \
+    unzip /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip -d \
+    /opt/utimaco/SecurityServerEvaluation-V4.51.0.1 && \
+    rm /opt/utimaco/SecurityServerEvaluation-V4.51.0.1.zip && \
+    rm /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1.zip
+RUN chmod 755 /opt/utimaco/SecurityServerEvaluation-V4.51.0.1/\
+Software/Linux/x86-64/Administration/csadm
+RUN chmod 755  /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/\
+Software/Linux/x86-64/Administration/csadm
+
+## symlink for R2 library
+RUN ln -s /opt/utimaco/CryptoServerCP5-SupportingCD-V5.1.1.1/\
+Software/Linux/x86-64/Crypto_APIs/PKCS11_R2/lib/libcs_pkcs11_R2.so \
+    /opt/hsm_pkcs11.so
+
+## symlink for R3 library
+RUN ln -s /opt/utimaco/SecurityServerEvaluation-V4.51.0.1/\
+Software/Linux/x86-64/Crypto_APIs/PKCS11_R3/lib/libcs_pkcs11_R3.so \
+    /opt/hsm_r3_pkcs11.so
+
+RUN mkdir /etc/utimaco
+COPY utimaco_conf_dir/*.cfg /etc/utimaco
+
+## Utimaco envi for .so library
+COPY utimaco_envi_script/utimaco_env.sh /etc/profile.d/utimaco_env.sh
+
+## setting wildfly envi and its run script
+COPY wildfly_envi_script/wildfly_setenv.sh /etc/profile.d/wildfly_setenv.sh
+COPY wildfly_run_script/run_wildfly.sh /run_wildfly.sh
+RUN chmod 755 /run_wildfly.sh
+
+## Copy wildfly config scripts 
+RUN mkdir -p /usr/local/wildfly/config_script
+COPY wildfly_config_script/*.sh /usr/local/wildfly/config_script
+
+## COPY wildfly glowroot install script
+ARG ENABLE_GLOWROOT=false
+ENV ENABLE_GLOWROOT=$ENABLE_GLOWROOT
+COPY glowroot_install_script/*.sh /usr/local/wildfly/config_script
+
+### chmod config scripts
+RUN chmod 755 /usr/local/wildfly/config_script/*.sh
+
+### setting wildfly config script run
+ARG RUN_WILDFLY_CONFIG=false
+ENV RUN_WILDFLY_CONFIG=$RUN_WILDFLY_CONFIG
+
+### setting other default arg
+ARG DISABLE_MANAGEMENT_WEB_CONSOLE=false
+ENV DISABLE_MANAGEMENT_WEB_CONSOLE=$DISABLE_MANAGEMENT_WEB_CONSOLE
+ARG REMOVE_WILDFLY_WELCOME_CONTENT=false
+ENV REMOVE_WILDFLY_WELCOME_CONTENT=$REMOVE_WILDFLY_WELCOME_CONTENT
+ARG SIGNSERVER_VERSION=signserver-ce-5.11.1.Final
+ENV SIGNSERVER_VERSION=$SIGNSERVER_VERSION
+
+### setting keystore and trustore password
+ARG KEYSTORE_PASSWORD=foo123
+ENV KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+ARG TRUSTSTORE_PASSWORD=foobar
+ENV TRUSTSTORE_PASSWORD=$TRUSTSTORE_PASSWORD
+
+### setting db password
+ARG DB_PASSWORD=passw0rd
+ENV DB_PASSWORD=$DB_PASSWORD
+
+## Copy signserver set envi script, this is used for installation/deploy 
+## process also
+COPY signserver_envi_script/envi_signserver.sh \
+     /etc/profile.d/envi_signserver.sh
+## COPY and unzip signserver bin
+COPY installer_zip/signserver/$SIGNSERVER_VERSION-bin.zip \
+     /opt/$SIGNSERVER_VERSION-bin.zip 
+RUN unzip /opt/$SIGNSERVER_VERSION-bin.zip -d /opt && \
+    ln -s  /opt/$SIGNSERVER_VERSION/ /opt/signserver && \
+    rm /opt/$SIGNSERVER_VERSION-bin.zip
+### copy signserver custom conf folder
+RUN mkdir /opt/signserver-custom
+COPY signserver-custom /opt/signserver-custom
+
+## exposed ports
+### glowroot port
+EXPOSE 4000
+### signserver port
+##### unencrypted traffic
+EXPOSE 8080
+##### encrypted, only server authentication
+EXPOSE 8442
+#### encrypted, both server and client authentication
+EXPOSE 8443
+## wildfly web admin console port
+EXPOSE 9990
+
+## COPY main run scipts
+ARG WAIT_FOR_WILDFLY=13
+ENV WAIT_FOR_WILDFLY=$WAIT_FOR_WILDFLY
+COPY run_all.sh /run_all.sh
+RUN chmod 755 /run_all.sh
+
+## entry point
+ENTRYPOINT ["/bin/bash", "-l", "-c" ]
+CMD ["/run_all.sh"]

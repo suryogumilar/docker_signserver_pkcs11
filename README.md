@@ -26,6 +26,18 @@ docker build --build-arg WILDFLY_VERSION=26.1.3.Final --build-arg WAIT_FOR_WILDF
 
 ```
 
+```sh
+docker build --build-arg WILDFLY_VERSION=26.1.3.Final --build-arg WAIT_FOR_WILDFLY=10 \
+--build-arg DISABLE_MANAGEMENT_WEB_CONSOLE=true \
+--build-arg REMOVE_WILDFLY_WELCOME_CONTENT=true \
+-t local_signserver_jdk8:5.11.1-Final \
+-f Dockerbuild_jdk1.8_.ss511 .
+```
+
+side note when buiding image using jdk 1.8, problem when setting alternatives: 
+ - https://stackoverflow.com/questions/70003950/switching-openjdk-via-atlernatives-to-java-1-8-0-openjdk-failed-usr-bin-may-no
+
+
 ### build-args
 
 build argument and also envi variables for running a container
